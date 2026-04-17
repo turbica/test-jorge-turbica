@@ -1,0 +1,142 @@
+openapi: 3.0.3
+info:
+  title: Prices API
+  description: Price query service for e-commerce.
+  version: 1.0.0
+  contact:
+    name: Jorge Turbica
+
+servers:
+  - url: http://localhost:8080
+
+tags:
+  - name: prices
+    description: Price consultation operations
+
+paths:
+  /prices:
+    get:
+      tags:
+        - prices
+      summary: Get applicable price
+      description: |
+        Returns the single applicable price for a product and brand at a given point in time.
+        When multiple price ranges overlap, the one with the highest priority is returned.
+      operationId: getApplicablePrice
+      parameters:
+        - name: applicationDate
+          in: query
+          required: true
+          description: Date and time for which to query the applicable price (ISO 8601)
+          schema:
+            type: string
+            format: date-time
+            example: "2020-06-14T10:00:00"
+        - name: productId
+          in: query
+          required: true
+          description: Product identifier
+          schema:
+            type: integer
+            format: int64
+            example: 35455
+        - name: brandId
+          in: query
+          required: true
+          description: Brand (chain) identifier
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      responses:
+        "200":
+          description: Applicable price found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PriceResponse'
+              example:
+                productId: 35455
+                brandId: 1
+                priceList: 1
+                startDate: "2020-06-14T00:00:00"
+                endDate: "2020-12-31T23:59:59"
+                price: 35.50
+                currency: EUR
+        "400":
+          description: Invalid or missing request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        "404":
+          description: No applicable price found for the given parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  schemas:
+    PriceResponse:
+      type: object
+      required:
+        - productId
+        - brandId
+        - priceList
+        - startDate
+        - endDate
+        - price
+        - currency
+      properties:
+        productId:
+          type: integer
+          format: int64
+          description: Product identifier
+          example: 35455
+        brandId:
+          type: integer
+          format: int64
+          description: Brand (chain) identifier
+          example: 1
+        priceList:
+          type: integer
+          format: int64
+          description: Applicable price list (fare) identifier
+          example: 1
+        startDate:
+          type: string
+          format: date-time
+          description: Start of the applicable price range
+          example: "2020-06-14T00:00:00"
+        endDate:
+          type: string
+          format: date-time
+          description: End of the applicable price range
+          example: "2020-12-31T23:59:59"
+        price:
+          type: number
+          format: double
+          description: Final applicable sale price
+          example: 35.50
+        currency:
+          type: string
+          description: ISO 4217 currency code
+          minLength: 3
+          maxLength: 3
+          example: EUR
+
+    ErrorResponse:
+      type: object
+      required:
+        - status
+        - message
+      properties:
+        status:
+          type: integer
+          description: HTTP status code
+          example: 404
+        message:
+          type: string
+          description: Human-readable error description
+          example: "No applicable price found for productId=35455, brandId=1 at 2020-06-14T10:00:00"

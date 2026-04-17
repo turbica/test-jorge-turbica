@@ -1,0 +1,92 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.0.5'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.openapi.generator' version '7.12.0'
+}
+
+group = 'com.jorgeturbica'
+version = '0.0.1-SNAPSHOT'
+description = 'test-jorge-turbica'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(25)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Web + JPA + H2
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    implementation 'org.springframework.boot:spring-boot-h2console'
+    runtimeOnly 'com.h2database:h2'
+
+    // OpenAPI generated code runtime deps
+    implementation 'io.swagger.core.v3:swagger-annotations:2.2.25'
+    implementation 'jakarta.validation:jakarta.validation-api'
+    implementation 'jakarta.annotation:jakarta.annotation-api'
+
+    // MapStruct
+    implementation 'org.mapstruct:mapstruct:1.6.3'
+
+    // Lombok
+    compileOnly 'org.projectlombok:lombok'
+
+    // Annotation processors — ORDER MATTERS: Lombok before MapStruct
+    annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+    annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+
+    // Test
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testCompileOnly 'org.projectlombok:lombok'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testAnnotationProcessor 'org.projectlombok:lombok'
+    testAnnotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+    testAnnotationProcessor 'org.mapstruct:mapstruct-processor:1.6.3'
+}
+
+// --- OpenAPI code generation ---
+
+openApiGenerate {
+    generatorName = 'spring'
+    inputSpec     = "${rootDir}/docs/openapi/api-definition.yaml"
+    outputDir     = "${layout.buildDirectory.get()}/generated"
+    apiPackage    = 'com.jorgeturbica.prices.infrastructure.rest.generated.api'
+    modelPackage  = 'com.jorgeturbica.prices.infrastructure.rest.generated.model'
+    configOptions = [
+        interfaceOnly          : 'true',
+        useSpringBoot3         : 'true',
+        useTags                : 'true',
+        dateLibrary            : 'java8-localdatetime',
+        skipDefaultInterface   : 'true',
+        openApiNullable        : 'false',
+        useJakartaEe           : 'true'
+    ]
+    generateApiTests              = false
+    generateModelTests            = false
+    generateApiDocumentation      = false
+    generateModelDocumentation    = false
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "${layout.buildDirectory.get()}/generated/src/main/java"
+        }
+    }
+}
+
+compileJava.dependsOn tasks.openApiGenerate
+
+// --- Test ---
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
