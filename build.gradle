@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'jacoco'
     id 'org.springframework.boot' version '4.0.5'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'org.openapi.generator' version '7.12.0'
@@ -91,4 +92,40 @@ compileJava.dependsOn tasks.openApiGenerate
 
 tasks.named('test') {
     useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+// --- Coverage ---
+
+jacocoTestReport {
+    dependsOn test
+    reports {
+        xml.required = true
+        html.required = true
+    }
+    afterEvaluate {
+        // Exclude OpenAPI-generated code — not hand-written, not testable
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                'com/jorgeturbica/prices/infrastructure/rest/generated/**'
+            ])
+        }))
+    }
+}
+
+jacocoTestCoverageVerification {
+    afterEvaluate {
+        classDirectories.setFrom(files(classDirectories.files.collect {
+            fileTree(dir: it, exclude: [
+                'com/jorgeturbica/prices/infrastructure/rest/generated/**'
+            ])
+        }))
+    }
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.80
+            }
+        }
+    }
 }

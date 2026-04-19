@@ -127,4 +127,64 @@ class PriceControllerIntegrationTest {
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.status").value(400));
     }
+
+    @Test
+    @DisplayName("Missing productId returns 400")
+    void whenMissingProductId_returns400() throws Exception {
+        mockMvc.perform(get(ENDPOINT)
+                        .param("applicationDate", "2020-06-14T10:00:00")
+                        .param("brandId", BRAND_ID))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Missing brandId returns 400")
+    void whenMissingBrandId_returns400() throws Exception {
+        mockMvc.perform(get(ENDPOINT)
+                        .param("applicationDate", "2020-06-14T10:00:00")
+                        .param("productId", PRODUCT_ID))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Non-numeric brandId returns 400")
+    void whenBrandIdIsNotNumeric_returns400() throws Exception {
+        mockMvc.perform(get(ENDPOINT)
+                        .param("applicationDate", "2020-06-14T10:00:00")
+                        .param("productId", PRODUCT_ID)
+                        .param("brandId", "abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$.status").value(400));
+    }
+
+    @Test
+    @DisplayName("Exact start boundary of price list 2 returns price list 2")
+    void whenApplicationDateIsExactStartOfPriceList2_returnsPriceList2() throws Exception {
+        // Row 2 starts at 15:00:00 — boundary is inclusive
+        mockMvc.perform(get(ENDPOINT)
+                        .param("applicationDate", "2020-06-14T15:00:00")
+                        .param("productId", PRODUCT_ID)
+                        .param("brandId", BRAND_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.priceList").value(2))
+                .andExpect(jsonPath("$.price").value(25.45));
+    }
+
+    @Test
+    @DisplayName("Exact end boundary of price list 2 returns price list 2")
+    void whenApplicationDateIsExactEndOfPriceList2_returnsPriceList2() throws Exception {
+        // Row 2 ends at 18:30:00 — boundary is inclusive
+        mockMvc.perform(get(ENDPOINT)
+                        .param("applicationDate", "2020-06-14T18:30:00")
+                        .param("productId", PRODUCT_ID)
+                        .param("brandId", BRAND_ID))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.priceList").value(2))
+                .andExpect(jsonPath("$.price").value(25.45));
+    }
 }
